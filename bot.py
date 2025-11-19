@@ -5,13 +5,13 @@ from datetime import datetime
 
 TOKEN = os.getenv("TOKEN")  # Twój token bota
 CHANNEL_ID = 1440757951689392300  # ID kanału, gdzie bot ma wysyłać wiadomości
-INTERVAL = 3600  # co godzinę (3600 sekund)
+INTERVAL = 60  # co minutę (60 sekund)
 
 intents = discord.Intents.default()
 intents.message_content = True
 client = discord.Client(intents=intents)
 
-async def send_time_hourly():
+async def send_time_minutely():
     await client.wait_until_ready()
     channel = client.get_channel(CHANNEL_ID)
     if channel is None:
@@ -19,15 +19,14 @@ async def send_time_hourly():
         return
 
     while True:
-        current_hour = datetime.now().hour  # pobranie aktualnej godziny
-        message = f"⏰ Jest godzina {current_hour}:00"
+        now = datetime.now()
+        message = f"⏰ Jest godzina {now.hour:02d}:{now.minute:02d}"
         await channel.send(message)
         await asyncio.sleep(INTERVAL)
 
 @client.event
 async def on_ready():
     print(f"✔️ Zalogowano jako: {client.user}")
-    # Uruchomienie zadania
-    asyncio.create_task(send_time_hourly())
+    asyncio.create_task(send_time_minutely())
 
 client.run(TOKEN)
