@@ -29,7 +29,7 @@ fishes = {
     "Legenda": {"xp": 100, "emoji": "🐋"}
 }
 
-COOLDOWN = 2.5  # sekundy
+COOLDOWN = 1  # sekundy
 
 def add_xp(user_id, xp):
     if user_id not in players:
@@ -70,8 +70,12 @@ class FishView(ui.View):
         # Losowanie ryby wg wag
         fish_name = random.choices(list(fishes.keys()), weights=[50,30,15,4,1])[0]
         fish_info = fishes[fish_name]
-        xp = fish_info['xp']
+        base_xp = fish_info['xp']
         emoji = fish_info['emoji']
+
+        # mnożnik XP w zależności od poziomu
+        player_level = players[user_id]['level'] if user_id in players else 1
+        xp = int(base_xp * (1 + player_level * 0.1))  # +10% XP za każdy poziom
 
         add_xp(user_id, xp)
 
