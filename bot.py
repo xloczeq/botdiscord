@@ -116,6 +116,10 @@ async def on_ready():
         print(f"🔧 Zsynchronizowano {len(synced)} komend slash.")
     except Exception as e:
         print("Błąd synchronizacji:", e)
+    
+    # Zapis początkowy, żeby plik powstał
+    save_players()
+
 
 @bot.tree.command(name="godzina", description="Pokazuje aktualną godzinę w Polsce")
 async def godzina(interaction: discord.Interaction):
