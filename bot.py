@@ -7,10 +7,8 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 import random
 import time
-import json
 
 TOKEN = os.getenv("TOKEN")
-DATA_FILE = "players.json"
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -20,12 +18,7 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 
 # ----------------- Baza graczy -----------------
 # player_id: {'xp': int, 'level': int, 'fish': {name: count}, 'last_fish': timestamp}
-try:
-    with open(DATA_FILE, "r") as f:
-        players = json.load(f)
-        players = {int(k): v for k,v in players.items()}
-except FileNotFoundError:
-    players = {}
+players = {}
 
 # ryby, XP i emotki
 fishes = {
@@ -36,13 +29,7 @@ fishes = {
     "Legenda": {"xp": 100, "emoji": "🐋"}
 }
 
-COOLDOWN = 30  # sekundy
-
-def save_players():
-    with open(DATA_FILE, "w") as f:
-        # zamieniamy klucze int na string
-        json.dump({str(k): v for k,v in players.items()}, f, indent=4)
-
+COOLDOWN = 2.5  # sekundy
 
 def add_xp(user_id, xp):
     if user_id not in players:
@@ -51,7 +38,6 @@ def add_xp(user_id, xp):
     while players[user_id]['xp'] >= players[user_id]['level'] * 100:
         players[user_id]['xp'] -= players[user_id]['level'] * 100
         players[user_id]['level'] += 1
-    save_players()  # zapis po dodaniu XP
 
 def xp_bar(player):
     total = player['level']*100
@@ -84,19 +70,14 @@ class FishView(ui.View):
         # Losowanie ryby wg wag
         fish_name = random.choices(list(fishes.keys()), weights=[50,30,15,4,1])[0]
         fish_info = fishes[fish_name]
-        base_xp = fish_info['xp']
+        xp = fish_info['xp']
         emoji = fish_info['emoji']
-
-        # mnożnik XP w zależności od poziomu
-        player_level = players[user_id]['level'] if user_id in players else 1
-        xp = int(base_xp * (1 + player_level * 0.1))  # +10% XP za każdy poziom
 
         add_xp(user_id, xp)
 
         # dodanie ryby
         player = players[user_id]
         player['fish'][fish_name] = player['fish'].get(fish_name, 0) + 1
-        save_players()  # zapis po złowieniu ryby
 
         embed = discord.Embed(title="🎣 Łowienie Ryb!", color=discord.Color.green())
         embed.add_field(name="Złowiono:", value=f"{emoji} {fish_name} (+{xp} XP)", inline=False)
@@ -108,7 +89,7 @@ class FishView(ui.View):
 
         await interaction.response.edit_message(embed=embed, view=self)
 
-# ----------------- Slash komendy -----------------
+# ----------------- Komendy -----------------
 @bot.event
 async def on_ready():
     print(f"✔️ Zalogowano jako: {bot.user}")
@@ -117,16 +98,14 @@ async def on_ready():
         print(f"🔧 Zsynchronizowano {len(synced)} komend slash.")
     except Exception as e:
         print("Błąd synchronizacji:", e)
-    
-    # Zapis początkowy, żeby plik powstał
-    save_players()
 
-
+# godzina
 @bot.tree.command(name="godzina", description="Pokazuje aktualną godzinę w Polsce")
 async def godzina(interaction: discord.Interaction):
     now = datetime.now(ZoneInfo("Europe/Warsaw"))
     await interaction.response.send_message(f"⏰ Jest godzina {now.hour:02d}:{now.minute:02d}")
 
+# clear
 @bot.tree.command(name="clear", description="Czyści wiadomości w kanale")
 @app_commands.describe(ilosc="Ile wiadomości usunąć? (max 100)")
 async def clear(interaction: discord.Interaction, ilosc: int):
@@ -145,6 +124,7 @@ async def clear(interaction: discord.Interaction, ilosc: int):
     await asyncio.sleep(5)
     await msg.delete()
 
+# komendy
 @bot.tree.command(name="komendy", description="Lista komend bota")
 async def komendy(interaction: discord.Interaction):
     embed = discord.Embed(title="📜 Lista Komend Bota", color=discord.Color.blurple())
@@ -154,16 +134,19 @@ async def komendy(interaction: discord.Interaction):
     embed.add_field(name="/profile", value="Wyświetla Twój profil i złowione ryby.", inline=False)
     await interaction.response.send_message(embed=embed)
 
+# fish
 @bot.tree.command(name="fish", description="Idź połowić ryby!")
 async def fish(interaction: discord.Interaction):
     user_id = interaction.user.id
     if user_id not in players:
         players[user_id] = {'xp':0, 'level':1, 'fish':{}, 'last_fish':0}
+
     embed = discord.Embed(title="🎣 Łowienie Ryb!", description="Kliknij **Łów!** aby spróbować złowić rybę", color=discord.Color.blue())
     embed.set_footer(text=f"Masz 60 sekund na kliknięcie przycisku. Cooldown: {COOLDOWN}s")
     view = FishView(user_id)
     await interaction.response.send_message(embed=embed, view=view)
 
+# profile
 @bot.tree.command(name="profile", description="Pokazuje Twój profil w grze łowienia ryb")
 async def profile(interaction: discord.Interaction):
     user_id = interaction.user.id
