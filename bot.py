@@ -1,67 +1,82 @@
 import discord
 import os
 import asyncio
+from discord.ext import commands
+from discord import app_commands
 from datetime import datetime
-from zoneinfo import ZoneInfo  # Python 3.9+
+from zoneinfo import ZoneInfo
 
 TOKEN = os.getenv("TOKEN")
-CHANNEL_ID = 1440757951689392300
 
 intents = discord.Intents.default()
-intents.message_content = True
+intents.message_content = True  # opcjonalne
 intents.messages = True
-client = discord.Client(intents=intents)
 
-@client.event
+# Używamy bot zamiast client — wymagane do slash commands
+bot = commands.Bot(command_prefix="!", intents=intents)
+
+
+# 🔄 Synchronizacja komend
+@bot.event
 async def on_ready():
-    print(f"✔️ Zalogowano jako: {client.user}")
+    print(f"✔️ Zalogowano jako: {bot.user}")
 
-@client.event
-async def on_message(message):
-    # Ignoruj wiadomości od samego siebie
-    if message.author == client.user:
+    try:
+        synced = await bot.tree.sync()
+        print(f"🔧 Zsynchronizowano {len(synced)} komend slash.")
+    except Exception as e:
+        print("Błąd synchronizacji:", e)
+
+
+# 🕒 /godzina
+@bot.tree.command(name="godzina", description="Pokazuje aktualną godzinę w Polsce")
+async def godzina(interaction: discord.Interaction):
+    now = datetime.now(ZoneInfo("Europe/Warsaw"))
+    await interaction.response.send_message(
+        f"⏰ Jest godzina {now.hour:02d}:{now.minute:02d}"
+    )
+
+
+# 🧹 /clear
+@bot.tree.command(name="clear", description="Czyści określoną liczbę wiadomości z kanału")
+@app_commands.describe(ilosc="Ile wiadomości chcesz usunąć?")
+async def clear(interaction: discord.Interaction, ilosc: int):
+    if not interaction.user.guild_permissions.manage_messages:
+        await interaction.response.send_message(
+            "❌ Nie masz uprawnień do czyszczenia wiadomości!",
+            ephemeral=True
+        )
         return
 
-    # Komenda godzina
-    if message.content.lower() == "!godzina":
-        now = datetime.now(ZoneInfo("Europe/Warsaw"))
-        response = f"⏰ Jest godzina {now.hour:02d}:{now.minute:02d}"
-        await message.channel.send(response)
-
-    # Komenda czyszczenia czatu
-    elif message.content.lower().startswith("!clear"):
-        if not message.author.guild_permissions.manage_messages:
-            await message.channel.send("❌ Nie masz uprawnień do czyszczenia wiadomości!")
-            return
-
-        try:
-            amount = int(message.content.split()[1])
-        except (IndexError, ValueError):
-            amount = 10  # domyślnie 10 wiadomości
-
-        if message.channel.permissions_for(message.guild.me).manage_messages:
-            deleted = await message.channel.purge(limit=amount + 1)
-            confirmation = await message.channel.send(
-                f"🧹 Usunięto {len(deleted)-1} wiadomości."
-            )
-            await asyncio.sleep(5)
-            await confirmation.delete()
-        else:
-            await message.channel.send(
-                "❌ Nie mam uprawnień do zarządzania wiadomościami w tym kanale!"
-            )
-
-    # Komenda lista komend
-    elif message.content.lower() == "!komendy":
-        embed = discord.Embed(
-            title="📜 Lista Komend Bota",
-            description="Oto wszystkie dostępne komendy i ich opis:",
-            color=discord.Color.blue()
+    if not interaction.channel.permissions_for(interaction.guild.me).manage_messages:
+        await interaction.response.send_message(
+            "❌ Nie mam uprawnień do usuwania wiadomości!",
+            ephemeral=True
         )
-        embed.add_field(name="!godzina", value="Wyświetla aktualną godzinę i minutę w Polsce.", inline=False)
-        embed.add_field(name="!clear [liczba]", value="Czyści podaną liczbę wiadomości w kanale (domyślnie 10). Wymagane uprawnienie: Manage Messages.", inline=False)
-        embed.add_field(name="!komendy", value="Wyświetla tę listę komend.", inline=False)
-        
-        await message.channel.send(embed=embed)
+        return
 
-client.run(TOKEN)
+    await interaction.response.send_message(f"🧹 Usuwam {ilosc} wiadomości...", ephemeral=True)
+
+    deleted = await interaction.channel.purge(limit=ilosc)
+    
+    msg = await interaction.channel.send(f"🧹 Usunięto {len(deleted)} wiadomości.")
+    await asyncio.sleep(5)
+    await msg.delete()
+
+
+# 📜 /komendy
+@bot.tree.command(name="komendy", description="Wyświetla listę komend bota")
+async def komendy(interaction: discord.Interaction):
+    embed = discord.Embed(
+        title="📜 Lista Komend Bota",
+        description="Oto wszystkie dostępne komendy:",
+        color=discord.Color.blue()
+    )
+    embed.add_field(name="/godzina", value="Pokazuje aktualną godzinę w Polsce.", inline=False)
+    embed.add_field(name="/clear <ilość>", value="Czyści podaną liczbę wiadomości z kanału.", inline=False)
+    embed.add_field(name="/komendy", value="Pokazuje tę listę.", inline=False)
+
+    await interaction.response.send_message(embed=embed)
+
+
+bot.run(TOKEN)
