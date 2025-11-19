@@ -23,7 +23,6 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 try:
     with open(DATA_FILE, "r") as f:
         players = json.load(f)
-        # Klucze w JSON są stringami, więc zamieniamy na int
         players = {int(k): v for k,v in players.items()}
 except FileNotFoundError:
     players = {}
@@ -41,7 +40,9 @@ COOLDOWN = 30  # sekundy
 
 def save_players():
     with open(DATA_FILE, "w") as f:
-        json.dump(players, f)
+        # zamieniamy klucze int na string
+        json.dump({str(k): v for k,v in players.items()}, f, indent=4)
+
 
 def add_xp(user_id, xp):
     if user_id not in players:
