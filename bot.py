@@ -2,10 +2,11 @@ import discord
 import asyncio
 import os
 from datetime import datetime
+from zoneinfo import ZoneInfo  # Python 3.9+
 
-TOKEN = os.getenv("TOKEN")  # Twój token bota
-CHANNEL_ID = 1440757951689392300  # ID kanału, gdzie bot ma wysyłać wiadomości
-INTERVAL = 60  # co minutę (60 sekund)
+TOKEN = os.getenv("TOKEN")
+CHANNEL_ID = 1440757951689392300
+INTERVAL = 60  # co minutę
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -19,7 +20,7 @@ async def send_time_minutely():
         return
 
     while True:
-        now = datetime.now()
+        now = datetime.now(ZoneInfo("Europe/Warsaw"))  # ustawienie strefy czasowej
         message = f"⏰ Jest godzina {now.hour:02d}:{now.minute:02d}"
         await channel.send(message)
         await asyncio.sleep(INTERVAL)
