@@ -29,7 +29,7 @@ fishes = {
     "Legenda": {"xp": 100, "emoji": "🐋"}
 }
 
-COOLDOWN = 30  # sekundy
+COOLDOWN = 2.5  # sekundy
 
 def add_xp(user_id, xp):
     if user_id not in players:
