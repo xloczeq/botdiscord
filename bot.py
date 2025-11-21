@@ -2,11 +2,9 @@ import discord
 import os
 import asyncio
 from discord.ext import commands
-from discord import app_commands, ui, ButtonStyle
+from discord import app_commands
 from datetime import datetime
 from zoneinfo import ZoneInfo
-import random
-import time
 
 TOKEN = os.getenv("TOKEN")
 
