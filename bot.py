@@ -3,7 +3,7 @@ import os
 import asyncio
 from discord.ext import commands
 from discord import app_commands
-from datetime import datetime
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 TOKEN = os.getenv("TOKEN")
