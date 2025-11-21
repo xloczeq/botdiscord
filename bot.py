@@ -52,10 +52,25 @@ async def clear(interaction: discord.Interaction, ilosc: int):
 # komendy
 @bot.tree.command(name="komendy", description="Lista komend bota")
 async def komendy(interaction: discord.Interaction):
-    embed = discord.Embed(title="📜 Lista Komend Bota", color=discord.Color.blurple())
-    embed.add_field(name="/godzina", value="Pokazuje godzinę.", inline=False)
-    embed.add_field(name="/clear <ilość>", value="Czyści wiadomości.", inline=False)
+
+    embed = discord.Embed(
+        title="📜 Lista Komend Bota",
+        description="Oto wszystkie dostępne komendy:",
+        color=discord.Color.blurple()
+    )
+
+    embed.add_field(name="/godzina", value="Pokazuje aktualną godzinę w Polsce.", inline=False)
+    embed.add_field(name="/clear <ilość>", value="Czyści określoną liczbę wiadomości.", inline=False)
+    embed.add_field(name="/komendy", value="Wyświetla tę listę komend.", inline=False)
+
+    embed.add_field(
+        name="/giveaway <czas> <nagroda>",
+        value="Tworzy giveaway z przyciskami. Przykład: `/giveaway 10s Nitro`",
+        inline=False
+    )
+
     await interaction.response.send_message(embed=embed)
+
 
 # ---------------- GIVEAWAY SYSTEM -----------------
 
