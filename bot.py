@@ -55,50 +55,7 @@ async def komendy(interaction: discord.Interaction):
     embed = discord.Embed(title="📜 Lista Komend Bota", color=discord.Color.blurple())
     embed.add_field(name="/godzina", value="Pokazuje godzinę.", inline=False)
     embed.add_field(name="/clear <ilość>", value="Czyści wiadomości.", inline=False)
-    embed.add_field(name="/odliczanie", value="Tworzy własne odliczanie.", inline=False)
     await interaction.response.send_message(embed=embed)
-
-# ----------------- /odliczanie -----------------
-@bot.tree.command(name="odliczanie", description="Tworzy odliczanie do wybranej daty i godziny.")
-@app_commands.describe(
-    tytul="Tytuł odliczania",
-    data="Data i godzina końca (format: RRRR-MM-DD HH:MM)"
-)
-async def odliczanie(interaction: discord.Interaction, tytul: str, data: str):
-    try:
-        end_time = datetime.strptime(data, "%Y-%m-%d %H:%M")
-    except ValueError:
-        await interaction.response.send_message(
-            "❌ Błędny format daty! Użyj: `RRRR-MM-DD HH:MM`", ephemeral=True
-        )
-        return
-
-    now = datetime.now()
-    if end_time <= now:
-        await interaction.response.send_message(
-            "❌ Ta data już minęła!", ephemeral=True
-        )
-        return
-
-    embed = Embed(title="⏳ Nowe odliczanie!", color=0x00eaff)
-    embed.add_field(name="🎯 Tytuł", value=tytul, inline=False)
-    embed.add_field(name="⏰ Kończy się", value=f"<t:{int(end_time.timestamp())}:F>", inline=False)
-    embed.add_field(name="👤 Utworzone przez", value=interaction.user.mention, inline=False)
-    embed.set_footer(text="Odliczanie wystartowało!")
-
-    await interaction.response.send_message(embed=embed)
-
-    seconds = (end_time - now).total_seconds()
-
-    await asyncio.sleep(seconds)
-
-    end_embed = Embed(title="🎉 Odliczanie zakończone!", color=0x00ff62)
-    end_embed.add_field(name="▶ Tytuł", value=tytul, inline=False)
-    end_embed.add_field(name="👤 Twórca", value=interaction.user.mention, inline=False)
-    end_embed.add_field(name="⏱ Zakończono", value=f"<t:{int(end_time.timestamp())}:F>", inline=False)
-    end_embed.set_footer(text="Gratulacje, dotrwaliśmy!")
-
-    await interaction.followup.send(embed=end_embed)
 
 # ---------------- Uruchomienie -----------------
 bot.run(TOKEN)
